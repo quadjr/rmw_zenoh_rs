@@ -16,6 +16,7 @@ use crate::TypeSupport;
 
 use crate::rmw::rmw_qos_history_policy_e_RMW_QOS_POLICY_HISTORY_KEEP_LAST as HISTORY_KEEP_LAST;
 
+// The Endpoint struct represents a communication endpoint (e.g., Publisher, Subscriber)
 pub struct Endpoint<T> {
     pub info: EndpointInfo,
     pub graph_cache: Arc<GraphCache>,
@@ -32,6 +33,7 @@ pub struct Endpoint<T> {
 }
 
 impl<T> Endpoint<T> {
+    // Constructor for creating a new Endpoint
     pub fn new(
         node: &mut Node,
         entity_type: EntityType,
@@ -40,20 +42,23 @@ impl<T> Endpoint<T> {
         recv_type_support: Option<TypeSupport>,
         qos: rmw_qos_profile_t,
     ) -> Result<Self, ()> {
+        // Clone the node's information and configure the endpoint
         let mut info = node.info.clone();
         info.entity_id = node.generate_entity_id();
         info.entity_type = entity_type;
         info.endpoint_name = endpoint_name.to_string();
         info.qos = qos;
-        let initial_capacity = info.qos.depth as usize;
 
+        // Set the endpoint type based on type support
         if let Some(ref type_support) = send_type_support {
             info.endpoint_type = type_support.type_name.clone();
         } else if let Some(ref type_support) = recv_type_support {
             info.endpoint_type = type_support.type_name.clone();
         }
 
+        // Create the endpoint instance
         let key_expr = info.to_string();
+        let initial_capacity = info.qos.depth as usize;
         let endpoint = Endpoint {
             info,
             graph_cache: node.graph_cache.clone(),
@@ -81,6 +86,7 @@ impl<T> Endpoint<T> {
         Ok(endpoint)
     }
 
+    // Checks if the receive FIFO is empty
     pub fn is_empty(&self) -> bool {
         if let Ok(fifo) = self.recv_fifo.lock() {
             fifo.is_empty()
@@ -89,23 +95,27 @@ impl<T> Endpoint<T> {
         }
     }
 
+    // Pushes received data into the FIFO queue
     pub fn push_recv_data(&self, data: T) {
-        if let Ok(mut fifo) = self.recv_fifo.lock() {
-            let timestamp = match SystemTime::now().duration_since(UNIX_EPOCH) {
-                Ok(v) => v.as_nanos() as i64,
-                Err(_) => 0,
-            };
+        let timestamp = match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(v) => v.as_nanos() as i64,
+            Err(_) => 0,
+        };
 
+        if let Ok(mut fifo) = self.recv_fifo.lock() {
+            // If QoS is keep-last and the queue is full, remove the oldest message
             if (self.info.qos.history == HISTORY_KEEP_LAST) && fifo.len() >= self.info.qos.depth {
                 fifo.pop_front();
             }
+            // Add the new message with a timestamp
             fifo.push_back((timestamp, data));
-
+            // Notify waiting threads
             let (_, cvar) = &*self.wait_set_cv;
             cvar.notify_all();
         } else {
             return;
         }
+        // Invoke the on-receive callback if it is set
         if let Ok(callback) = self.on_recv_callback.lock() {
             if let (Some(func), userdata) = *callback {
                 unsafe {
@@ -118,6 +128,7 @@ impl<T> Endpoint<T> {
         }
     }
 
+    // Takes a message from the FIFO queue
     pub fn take_message(&self) -> Option<(i64, T)> {
         if let Ok(mut fifo) = self.recv_fifo.lock() {
             fifo.pop_front()
@@ -127,6 +138,7 @@ impl<T> Endpoint<T> {
     }
 }
 
+// Clean up resources when the Endpoint is dropped
 impl<T> Drop for Endpoint<T> {
     fn drop(&mut self) {
         if let Ok(mut buffer) = self.message_buffer.lock() {

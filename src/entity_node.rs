@@ -8,6 +8,7 @@ use crate::EndpointInfo;
 use crate::EntityType;
 use crate::GraphCache;
 
+// Node struct: Represents a ROS 2 node
 pub struct Node<'a> {
     pub context: &'a Context,
     pub info: EndpointInfo,
@@ -19,7 +20,9 @@ pub struct Node<'a> {
 }
 
 impl<'a> Node<'a> {
+    // Constructor for creating a new Node instance
     pub fn new(context: &'a mut Context, namespace: &str, node_name: &str) -> Result<Self, ()> {
+        // Initialize EndpointInfo with node-specific metadata
         let mut info = EndpointInfo::default();
         info.domain_id = context.domain_id;
         info.z_id = context.session.info().zid().wait().to_string();
@@ -30,6 +33,7 @@ impl<'a> Node<'a> {
         info.namespace = namespace.to_string();
         info.node_name = node_name.to_string();
 
+        // Convert EndpointInfo into a key expression for liveliness
         let key_expr = info.to_string();
         Ok(Node {
             context,
@@ -45,6 +49,7 @@ impl<'a> Node<'a> {
                 .map_err(|_| ())?,
         })
     }
+    // Generates a unique entity ID by incrementing the counter atomically
     pub fn generate_entity_id(&mut self) -> usize {
         return self.next_entity_id.fetch_add(1, Ordering::Relaxed);
     }

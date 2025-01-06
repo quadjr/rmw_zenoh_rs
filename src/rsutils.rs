@@ -3,6 +3,7 @@ use std::ptr::null_mut;
 
 use crate::rmw::*;
 
+// Macro to validate the allocator's function pointers
 #[macro_export]
 macro_rules! validate_allocator {
     ($return_value:expr, $allocator:expr) => {
@@ -18,6 +19,7 @@ macro_rules! validate_allocator {
     };
 }
 
+// Macro to check that multiple pointers are not null
 #[macro_export]
 macro_rules! check_not_null_all {
     ($return_value:expr, $($ptr:expr),+) => {
@@ -30,6 +32,7 @@ macro_rules! check_not_null_all {
     };
 }
 
+// Macro to check that multiple pointers are null
 #[macro_export]
 macro_rules! check_is_null_all {
     ($return_value:expr, $($ptr:expr),+) => {
@@ -42,6 +45,7 @@ macro_rules! check_is_null_all {
     };
 }
 
+// Macro to validate the implementation identifier of an RMW structure
 #[macro_export]
 macro_rules! validate_implementation_identifier {
     ($p:expr) => {
@@ -64,6 +68,7 @@ macro_rules! validate_implementation_identifier {
     };
 }
 
+// Macro to check that an implementation identifier is empty
 #[macro_export]
 macro_rules! check_implementation_identifier_empty {
     ($return_value:expr, $p:expr) => {
@@ -73,12 +78,15 @@ macro_rules! check_implementation_identifier_empty {
     };
 }
 
+// Implement `Send` and `Sync` for serialized messages and allocator structs
 unsafe impl Send for rmw_serialized_message_t {}
 unsafe impl Sync for rmw_serialized_message_t {}
 unsafe impl Send for rcutils_allocator_t {}
 unsafe impl Sync for rcutils_allocator_t {}
 
+// Methods for `rmw_serialized_message_t` for managing serialized message memory
 impl rmw_serialized_message_t {
+    // Creates a new serialized message with the specified size.
     pub fn new(size: usize, allocator: rcutils_allocator_t) -> Result<Self, ()> {
         let mut res = unsafe { rcutils_get_zero_initialized_uint8_array() };
         (unsafe { rcutils_uint8_array_init(&mut res, size, &allocator) }
@@ -86,19 +94,20 @@ impl rmw_serialized_message_t {
             .then_some(res)
             .ok_or(())
     }
-
+    // Reserves or resizes memory for the serialized message.
     pub fn try_reserve(&mut self, new_size: usize) -> Result<(), ()> {
         (new_size <= self.buffer_capacity
             || unsafe { rcutils_uint8_array_resize(self, new_size) == RMW_RET_OK as rcutils_ret_t })
         .then_some(())
         .ok_or(())
     }
-
+    // Releases memory for the serialized message.
     pub fn fini(&mut self) {
         unsafe { rcutils_uint8_array_fini(self) };
     }
 }
 
+// `StringStorage` struct for managing dynamically allocated strings
 pub struct StringStorage<'a> {
     pub string: *mut ::std::os::raw::c_char,
     pub ref_str: &'a str,
@@ -106,6 +115,7 @@ pub struct StringStorage<'a> {
 }
 
 impl<'a> StringStorage<'a> {
+    // Creates a new `StringStorage` by copying a source string.
     pub fn copy_from(
         src: *const ::std::os::raw::c_char,
         allocator: rcutils_allocator_t,
@@ -136,7 +146,7 @@ impl<'a> StringStorage<'a> {
             })
         }
     }
-
+    // Takes ownership of the allocated string, resetting the internal state.
     pub fn take(&mut self) -> *mut ::std::os::raw::c_char {
         let p = self.string;
         self.string = null_mut();
@@ -144,7 +154,7 @@ impl<'a> StringStorage<'a> {
         p
     }
 }
-
+// Automatically deallocates the string when `StringStorage` is dropped
 impl<'a> Drop for StringStorage<'a> {
     fn drop(&mut self) {
         if !self.string.is_null() {
@@ -155,6 +165,7 @@ impl<'a> Drop for StringStorage<'a> {
     }
 }
 
+// Converts a C-style string pointer to a Rust string slice.
 pub fn str_from_ptr<'a>(ptr: *const ::std::os::raw::c_char) -> Result<&'a str, ()> {
     if ptr.is_null() {
         Err(())

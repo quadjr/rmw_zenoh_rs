@@ -102,6 +102,6 @@ Logging functionality has not been implemented yet.
 
 ## Known Issues
 
-- **Memory allocation**: Memory allocation is not yet optimized.
-- **Performance**: Performance has not been tested thoroughly.
-- **Error handling**: Error handling needs significant improvement.
+- **Error handling**: Error handling needs improvement.
+- **Events**: Events are not implemented yet.
+- **Content filtering**: Content filtering is not implemented yet.

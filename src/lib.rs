@@ -1,3 +1,4 @@
+// Module declarations: Declare the modules used within the project
 mod context;
 mod endpoint;
 mod endpoint_info;
@@ -16,6 +17,7 @@ pub mod rmw;
 pub mod rsutils;
 mod type_support;
 
+// Import types and functions from the declared modules
 use context::Context;
 use endpoint::Endpoint;
 use endpoint_info::EndpointInfo;
@@ -37,6 +39,7 @@ use rmw::RMW_GID_STORAGE_SIZE;
 use rsutils::StringStorage;
 use type_support::TypeSupport;
 
+// Constant definitions: Fixed values used throughout the system
 const RMW_GID_STORAGE_SIZE_IRON: usize = 16;
 const ADMIN_SPACE: &str = "@ros2_lv";
 const IMPLEMENTATION_IDENTIFIER_STR: &str = "rmw_zenoh_rs";
@@ -45,10 +48,13 @@ const IMPLEMENTATION_IDENTIFIER_CHAR: *const ::std::os::raw::c_char =
 const SERIALIZATION_FORMAT_CHAR: *const ::std::os::raw::c_char =
     "cdr\0".as_ptr() as *const ::std::os::raw::c_char;
 
+// Importing types and values with aliases for brevity
 use crate::rmw::rmw_qos_durability_policy_e_RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL as DURABILITY_TRANSIENT_LOCAL;
 use crate::rmw::rmw_qos_history_policy_e_RMW_QOS_POLICY_HISTORY_KEEP_LAST as HISTORY_KEEP_LAST;
 use crate::rmw::rmw_qos_liveliness_policy_e_RMW_QOS_POLICY_LIVELINESS_AUTOMATIC as POLICY_LIVELINESS_AUTOMATIC;
 use crate::rmw::rmw_qos_reliability_policy_e_RMW_QOS_POLICY_RELIABILITY_RELIABLE as ELIABILITY_RELIABLE;
+
+// Constants: Default time and QoS settings
 const RMW_DURATION_INFINITE: rmw::rmw_time_t = rmw::rmw_time_t {
     sec: 9223372036,
     nsec: 854775807,
