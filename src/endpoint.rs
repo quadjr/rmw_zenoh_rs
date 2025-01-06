@@ -45,6 +45,7 @@ impl<T> Endpoint<T> {
         info.entity_type = entity_type;
         info.endpoint_name = endpoint_name.to_string();
         info.qos = qos;
+        let initial_capacity = info.qos.depth as usize;
 
         if let Some(ref type_support) = send_type_support {
             info.endpoint_type = type_support.type_name.clone();
@@ -64,7 +65,7 @@ impl<T> Endpoint<T> {
             send_type_support,
             recv_type_support,
             wait_set_cv: node.context.wait_set_cv.clone(),
-            recv_fifo: Arc::new(Mutex::new(VecDeque::new())),
+            recv_fifo: Arc::new(Mutex::new(VecDeque::with_capacity(initial_capacity))),
             on_recv_callback: Arc::new(Mutex::new((
                 None::<unsafe extern "C" fn(*const ::std::os::raw::c_void, usize)>,
                 0,
