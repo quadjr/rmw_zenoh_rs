@@ -24,6 +24,22 @@ const void * rs_get_message_type_support_callbacks(
     return type_support->data;
 }
 
+// Retrieve service type support callbacks for FastRTPS
+const service_type_support_callbacks_t * rs_get_service_type_support_callbacks(
+    const rosidl_service_type_support_t *type_support_
+){
+    const rosidl_service_type_support_t * type_support =
+        get_service_typesupport_handle(type_support_, rosidl_typesupport_fastrtps_c__identifier);
+    if (!type_support) {
+        type_support = get_service_typesupport_handle(
+            type_support_, rosidl_typesupport_fastrtps_cpp::typesupport_identifier);
+    }
+    if (!type_support)  {
+        return NULL;
+    }
+    return static_cast<const service_type_support_callbacks_t *>(type_support->data);
+}
+
 // Retrieve request type support callbacks from service type support
 const void * rs_get_request_type_support_callbacks(
     const rosidl_service_type_support_t *type_support
@@ -112,20 +128,4 @@ bool rs_deserialize_message(
     eprosima::fastcdr::Cdr::DDS_CDR);
   deser.read_encapsulation();
   return cb->cdr_deserialize(deser, ros_message);
-}
-
-// Retrieve service type support callbacks for FastRTPS
-const service_type_support_callbacks_t * rs_get_service_type_support_callbacks(
-    const rosidl_service_type_support_t *type_support_
-){
-    const rosidl_service_type_support_t * type_support =
-        get_service_typesupport_handle(type_support_, rosidl_typesupport_fastrtps_c__identifier);
-    if (!type_support) {
-        type_support = get_service_typesupport_handle(
-            type_support_, rosidl_typesupport_fastrtps_cpp::typesupport_identifier);
-    }
-    if (!type_support)  {
-        return NULL;
-    }
-    return static_cast<const service_type_support_callbacks_t *>(type_support->data);
 }
