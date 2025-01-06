@@ -15,12 +15,14 @@ use crate::Node;
 use crate::TypeSupport;
 use crate::WaitSetTrait;
 
+// Client struct: Represents a ROS 2 client entity
 pub struct Client<'a> {
     client: zenoh::query::Querier<'a>,
     pub endpoint: Arc<Endpoint<Reply>>,
 }
 
 impl<'a> Client<'a> {
+    // Constructor for creating a new Client instance
     pub fn new(
         node: &mut Node,
         endpoint_name: &str,
@@ -28,6 +30,7 @@ impl<'a> Client<'a> {
         response_type_support: TypeSupport,
         mut qos: rmw_qos_profile_t,
     ) -> Result<Self, ()> {
+        // Ensure default QoS settings are applied
         qos.set_default_profile();
         let endpoint = Arc::new(Endpoint::new(
             node,
@@ -37,6 +40,7 @@ impl<'a> Client<'a> {
             Some(response_type_support),
             qos,
         )?);
+        // Generate the key expression for the endpoint
         let key_expr = endpoint.info.get_endpoint_keyexpr();
         let client = node
             .context
@@ -47,17 +51,18 @@ impl<'a> Client<'a> {
         Ok(Client { client, endpoint })
     }
 
+    // Sends a request to the service
     pub fn send_request(&self, ros_request: *const ::std::os::raw::c_void) -> Result<i64, ()> {
+        // Serialize Message
         let mut msg = self.endpoint.message_buffer.lock().map_err(|_| ())?;
         let type_support = self.endpoint.send_type_support.as_ref().ok_or(())?;
         type_support.serialize(ros_request, &mut *msg)?;
-        let endpoint = self.endpoint.clone();
-
+        // Increment the sequence number
         let seq = self
             .endpoint
             .sequence_number
             .fetch_add(1, Ordering::Relaxed);
-
+        // Create an attachment with metadata
         let attachment: ZBytes = Attachment::new(
             seq,
             SystemTime::now()
@@ -66,8 +71,9 @@ impl<'a> Client<'a> {
             self.endpoint.info.get_gid(),
         )
         .try_into()?;
-
+        // Send request
         let payload = unsafe { std::slice::from_raw_parts(msg.buffer, msg.buffer_length) };
+        let endpoint = self.endpoint.clone();
         self.client
             .get()
             .payload(payload)
@@ -79,25 +85,27 @@ impl<'a> Client<'a> {
             .map_err(|_| ())?;
         Ok(seq)
     }
-
+    // Takes a response from the service
     pub fn take_response(
         &self,
         request_header: *mut rmw_service_info_t,
         ros_response: *mut ::std::os::raw::c_void,
     ) -> Result<bool, ()> {
+        // Attempt to take a message from the endpoint
         let Some(data) = self.endpoint.take_message() else {
+            // Return false if no message is available
             return Ok(false);
         };
-
+        // Deserialize the response into the ROS message
         let mut msg = self.endpoint.message_buffer.lock().map_err(|_| ())?;
         let type_support = self.endpoint.recv_type_support.as_ref().ok_or(())?;
         let result = data.1.result().map_err(|_| ())?;
         read_payload(result.payload(), &mut msg)?;
         type_support.deserialize(&*msg, ros_response)?;
-
+        // Set the received timestamp
         let request_header = unsafe { &mut *request_header };
         request_header.received_timestamp = data.0;
-
+        // Parse the attachment
         let attachment: Attachment = result.attachment().ok_or(())?.try_into()?;
         request_header.source_timestamp = attachment.source_timestamp;
         request_header.request_id.sequence_number = attachment.sequence_number;
@@ -106,6 +114,7 @@ impl<'a> Client<'a> {
     }
 }
 
+// Implements WaitSetTrait for the Client
 impl<'a> WaitSetTrait for Client<'a> {
     fn is_empty(&self) -> bool {
         self.endpoint.is_empty()

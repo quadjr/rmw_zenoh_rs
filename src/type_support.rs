@@ -11,15 +11,18 @@ use crate::rmw::rs_get_request_type_support_callbacks;
 use crate::rmw::rs_get_response_type_support_callbacks;
 use crate::rmw::rs_serialize_message;
 
+// Represents type support for ROS messages or services, including serialization and deserialization.
 pub struct TypeSupport {
     pub type_name: String,
     type_support: *const ::std::os::raw::c_void,
 }
 
+// Enable thread-safe usage of `TypeSupport`
 unsafe impl Send for TypeSupport {}
 unsafe impl Sync for TypeSupport {}
 
 impl TypeSupport {
+    // Creates a new `TypeSupport` for a message type.
     pub fn new_message_type_support(
         type_support: *const rosidl_message_type_support_t,
     ) -> Result<Self, ()> {
@@ -29,6 +32,7 @@ impl TypeSupport {
             type_support,
         })
     }
+    // Creates a new `TypeSupport` for a service request type.
     pub fn new_request_type_support(
         type_support: *const rosidl_service_type_support_t,
     ) -> Result<Self, ()> {
@@ -38,6 +42,7 @@ impl TypeSupport {
             type_support,
         })
     }
+    // Creates a new `TypeSupport` for a service response type.
     pub fn new_response_type_support(
         type_support: *const rosidl_service_type_support_t,
     ) -> Result<Self, ()> {
@@ -47,7 +52,7 @@ impl TypeSupport {
             type_support,
         })
     }
-
+    // Retrieves the fully qualified type name.
     fn get_type_name(
         type_support: *const ::std::os::raw::c_void,
         type_name_suffix: &str,
@@ -73,7 +78,7 @@ impl TypeSupport {
         }
         Ok(format!("{message_namespace}/{message_name}").replace("::", "/"))
     }
-
+    // Serializes a ROS message into a serialized message buffer.
     pub fn serialize(
         &self,
         ros_message: *const ::std::os::raw::c_void,
@@ -84,7 +89,7 @@ impl TypeSupport {
             false => Err(()),
         }
     }
-
+    // Deserializes a serialized message buffer into a ROS message.
     pub fn deserialize(
         &self,
         serialized_message: *const rmw_serialized_message_t,

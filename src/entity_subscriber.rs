@@ -17,6 +17,7 @@ use crate::WaitSetTrait;
 use crate::IMPLEMENTATION_IDENTIFIER_CHAR;
 use crate::RMW_GID_STORAGE_SIZE;
 
+// Enum to represent two types of Zenoh subscriber
 enum SubscriberEnum {
     #[allow(dead_code)]
     Subscriber(zenoh::pubsub::Subscriber<()>),
@@ -24,6 +25,7 @@ enum SubscriberEnum {
     AdvancedSubscriber(AdvancedSubscriber<()>),
 }
 
+// Subscriber struct: Represents a ROS 2 subscriber entity
 pub struct Subscriber {
     #[allow(dead_code)]
     subscriber: SubscriberEnum,
@@ -31,12 +33,14 @@ pub struct Subscriber {
 }
 
 impl Subscriber {
+    // Constructor for creating a new Subscriber instance
     pub fn new(
         node: &mut Node,
         endpoint_name: &str,
         type_support: TypeSupport,
         mut qos: rmw_qos_profile_t,
     ) -> Result<Self, ()> {
+        // Ensure default QoS settings are applied
         qos.set_default_profile();
         let endpoint = Arc::new(Endpoint::new(
             node,
@@ -46,9 +50,12 @@ impl Subscriber {
             Some(type_support),
             qos,
         )?);
+        // Generate the key expression for the endpoint
         let key_expr = endpoint.info.get_endpoint_keyexpr();
         let endpoint_clone = endpoint.clone();
+        // Check if durability is set to Transient Local
         if qos.durability == DURABILITY_TRANSIENT_LOCAL {
+            // Create an advanced subscriber with caching
             Ok(Subscriber {
                 subscriber: SubscriberEnum::AdvancedSubscriber(
                     node.context
@@ -64,6 +71,7 @@ impl Subscriber {
                 endpoint,
             })
         } else {
+            // Create a standard subscriber without caching
             Ok(Subscriber {
                 subscriber: SubscriberEnum::Subscriber(
                     node.context
@@ -79,34 +87,37 @@ impl Subscriber {
             })
         }
     }
-
+    // Takes a deserialized ROS message and its metadata
     pub fn take_message(
         &self,
         ros_message: *mut ::std::os::raw::c_void,
         message_info: *mut rmw_message_info_t,
     ) -> Result<bool, ()> {
+        // Take the serialized message
         let mut msg = self.endpoint.message_buffer.lock().map_err(|_| ())?;
         let taken = self.take_serialized_message(&mut *msg, message_info)?;
         if taken {
+            // Deserialize the message
             let type_support = self.endpoint.recv_type_support.as_ref().ok_or(())?;
             type_support.deserialize(&*msg, ros_message)?
         }
         Ok(taken)
     }
-
+    // Takes a serialized message and its metadata
     pub fn take_serialized_message(
         &self,
         serialized_message: &mut rmw_serialized_message_t,
         message_info: *mut rmw_message_info_t,
     ) -> Result<bool, ()> {
-        // Read payload
+        // Attempt to take a message from the endpoint
         let Some(data) = self.endpoint.take_message() else {
             return Ok(false);
         };
+        // Read the payload into the serialized message buffer
         read_payload(data.1.payload(), serialized_message)?;
-
-        // Fill message_info
+        // Fill in the message metadata
         if message_info.is_null() {
+            // Parse the attachment
             let attachment: Attachment = data.1.attachment().ok_or(())?.try_into()?;
             let info = unsafe { &mut *message_info };
             info.source_timestamp = attachment.source_timestamp;
@@ -124,6 +135,7 @@ impl Subscriber {
     }
 }
 
+// Implements WaitSetTrait for the Subscriber
 impl WaitSetTrait for Subscriber {
     fn is_empty(&self) -> bool {
         self.endpoint.is_empty()

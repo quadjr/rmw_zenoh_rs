@@ -148,6 +148,7 @@ pub extern "C" fn rmw_init(
     let Ok(enclave) = str_from_ptr(options.enclave) else {
         return RET_ERROR;
     };
+    // Determine the domain ID; default to 0 if unspecified
     let domain_id = if options.domain_id == RMW_DEFAULT_DOMAIN_ID as usize {
         0
     } else {
@@ -1321,7 +1322,7 @@ pub extern "C" fn rmw_wait(
         let mut items_ptr: Vec<*mut *mut ::std::os::raw::c_void> = Vec::new();
         let mut items: Vec<&mut dyn WaitSetTrait> = Vec::new();
 
-        // Collect is_empty functions
+        // Macro to collect WaitSetTrait items and their pointers.
         macro_rules! collect_functions {
             ($target:ident, $objects:ident, $count:ident, $type:ty) => {
                 if !$target.is_null() && !(*$target).$objects.is_null() {
@@ -1333,6 +1334,7 @@ pub extern "C" fn rmw_wait(
                 }
             };
         }
+        // Collect subscribers, guard conditions, services, and clients into `items`.
         collect_functions!(subscriptions, subscribers, subscriber_count, Subscriber);
         collect_functions!(
             guard_conditions,
@@ -1343,7 +1345,7 @@ pub extern "C" fn rmw_wait(
         collect_functions!(services, services, service_count, Service);
         collect_functions!(clients, clients, client_count, Client);
 
-        // rmw_events_t has a different data structure from others.
+        // Handle events, which have a different data structure.
         if !events.is_null() && !(*events).events.is_null() {
             for i in 0..((*events).event_count) {
                 let item = (*events).events.add(i);
@@ -1351,32 +1353,37 @@ pub extern "C" fn rmw_wait(
                 items.push(&mut *((*(*item as *const rmw_event_t)).data as *mut Event));
             }
         }
+        // If no items are collected, return a timeout immediately.
         if items.len() == 0 {
             return RET_TIMEOUT;
         }
 
-        // Parepare condition variable
+        // Prepare the condition variable associated with the guard condition in the wait set.
         let mut data_ready = false;
         let guard_condition =
             (*((*wait_set).data as *mut rmw_guard_condition_t)).data as *mut GuardCondition;
         let (lock, cvar) = &*(*guard_condition).wait_set_cv;
         if let Ok(lock) = lock.lock() {
-            // Wait for data
+            // Wait for data to become available.
             if wait_timeout.is_null() {
-                // Wait for forever
+                // Wait indefinitely if wait_timeout is null.
                 let _unused = cvar.wait_while(lock, |_| items.iter().all(|item| item.is_empty()));
             } else if (*wait_timeout).sec != 0 || (*wait_timeout).nsec != 0 {
-                // Wait for specified duration
+                // Wait for the specified duration.
                 let duration = Duration::new((*wait_timeout).sec, (*wait_timeout).nsec as u32);
                 let _unused = cvar.wait_timeout_while(lock, duration, |_| {
                     items.iter().all(|item| item.is_empty())
                 });
+            } else {
+                // No wait if wait_timeout is 0.
             }
-            // Write null to empty items and cleanup trigger
+            // Process the items after the wait.
             for i in 0..items.len() {
                 if items[i].is_empty() {
+                    // Mark empty items as null.
                     *items_ptr[i] = std::ptr::null_mut();
                 } else {
+                    // Cleanup the item and mark data as ready.
                     items[i].cleanup();
                     data_ready = true;
                 }

@@ -12,6 +12,7 @@ use crate::EntityType;
 use crate::Node;
 use crate::IMPLEMENTATION_IDENTIFIER_STR;
 
+// Retrieves endpoint information for a given topic.
 pub fn get_endpoint_info_by_topic(
     node: *const rmw_node_t,
     allocator: *mut rcutils_allocator_t,
@@ -20,6 +21,7 @@ pub fn get_endpoint_info_by_topic(
     endpoint_types: &[EntityType],
     info_array: *mut rmw_topic_endpoint_info_array_t,
 ) -> rmw_ret_t {
+    // Validate inputs and the is empty
     check_not_null_all!(
         RET_INVALID_ARGUMENT,
         node,
@@ -29,21 +31,19 @@ pub fn get_endpoint_info_by_topic(
     );
     validate_allocator!(RET_INVALID_ARGUMENT, (*allocator));
     validate_implementation_identifier!(node);
-
     if unsafe { rmw_topic_endpoint_info_array_check_zero(info_array) } != RET_OK {
         return RET_INVALID_ARGUMENT;
     }
-
+    // Retrieve endpoint information from the graph cache
     let Ok(endpoint_name) = str_from_ptr(endpoint_name) else {
         return RET_INVALID_ARGUMENT;
     };
-
     let graph_cache = unsafe { &(*((*node).data as *mut Node)).graph_cache };
     let info = graph_cache.get_endpoint_list("", "", endpoint_name, endpoint_types);
     if info.is_empty() {
         return RET_OK;
     };
-
+    // Initialize and populate `info_array` with endpoint information
     if unsafe {
         rmw_topic_endpoint_info_array_init_with_size(&mut *info_array, info.len(), allocator)
     } == RET_OK
@@ -59,6 +59,7 @@ pub fn get_endpoint_info_by_topic(
     }
 }
 
+/// Sets detailed endpoint information into rmw_topic_endpoint_info_t.
 pub fn set_endpoint_info(
     item: &EndpointInfo,
     info: *mut rmw_topic_endpoint_info_t,
@@ -88,7 +89,7 @@ pub fn set_endpoint_info(
     .then_some(())
     .ok_or(())
 }
-
+// Retrieves topic names and types for a specific node.
 pub fn get_names_and_types(
     node: *const rmw_node_t,
     allocator: *mut rcutils_allocator_t,
@@ -98,6 +99,7 @@ pub fn get_names_and_types(
     endpoint_types: &[EntityType],
     names_and_types: *mut rmw_names_and_types_t,
 ) -> rmw_ret_t {
+    // Validate inputs and ensure arrays are empty
     check_not_null_all!(
         RET_INVALID_ARGUMENT,
         node,
@@ -107,11 +109,10 @@ pub fn get_names_and_types(
     );
     validate_allocator!(RET_INVALID_ARGUMENT, (*allocator));
     validate_implementation_identifier!(node);
-
     if unsafe { rmw_names_and_types_check_zero(names_and_types) } != RET_OK {
         return RET_INVALID_ARGUMENT;
     };
-
+    // Validate node name and namespace if provided
     if !node_name.is_null() && !namespace.is_null() {
         let mut name_valid = NODE_NAME_VALID;
         let mut ns_valid = NAMESPACE_VALID;
@@ -123,7 +124,7 @@ pub fn get_names_and_types(
             return RET_INVALID_ARGUMENT;
         }
     }
-
+    // Check the node exists
     let node_name = str_from_ptr(node_name).unwrap_or("");
     let namespace = str_from_ptr(namespace).unwrap_or("");
     let graph_cache = unsafe { &(*((*node).data as *mut Node)).graph_cache };
@@ -131,12 +132,11 @@ pub fn get_names_and_types(
     if node_info.is_empty() {
         return RET_NODE_NAME_NON_EXISTENT;
     }
-
+    // Retrieve endpoint information from the graph cache
     let info = graph_cache.get_endpoint_list(node_name, namespace, "", endpoint_types);
     if info.is_empty() {
         return RET_OK;
     }
-
     // Generate map of topic names and types
     let mut map: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for item in &info {
@@ -144,10 +144,11 @@ pub fn get_names_and_types(
             .or_insert_with(BTreeSet::new)
             .insert(item.endpoint_type.clone());
     }
-
+    // Initialize and populate `names_and_types` with topic information
     if unsafe { rmw_names_and_types_init(&mut *names_and_types, map.len(), allocator) } != RET_OK {
         return RET_ERROR;
     }
+    /// Sets topic names and types into rmw_names_and_types_t.
     if map.iter().enumerate().all(|(name_index, item)| unsafe {
         if let Ok(topic_name) = CString::new(item.0.clone()) {
             std::ptr::write(
@@ -179,24 +180,25 @@ pub fn get_names_and_types(
     }) {
         RET_OK
     } else {
+        // Finalize rmw_names_and_types_t if failed.
         unsafe { rcutils_string_array_fini(&mut (*names_and_types).names) };
-
         unsafe {
             for i in 0..(*names_and_types).names.size {
                 rcutils_string_array_fini((*names_and_types).types.add(i));
             }
         }
-
         RET_ERROR
     }
 }
 
+// Retrieves node names, namespaces, and enclaves for all nodes in the graph cache.
 pub fn get_node_names(
     node: *const rmw_node_t,
     node_names: *mut rcutils_string_array_t,
     node_namespaces: *mut rcutils_string_array_t,
     enclaves: *mut rcutils_string_array_t,
 ) -> rmw_ret_t {
+    // Validate inputs and ensure arrays are empty
     check_not_null_all!(
         RET_INVALID_ARGUMENT,
         node,
@@ -205,14 +207,13 @@ pub fn get_node_names(
         node_namespaces
     );
     validate_implementation_identifier!(node);
-
     if unsafe { rmw_check_zero_rmw_string_array(node_names) } != RET_OK
         || unsafe { rmw_check_zero_rmw_string_array(node_namespaces) } != RET_OK
         || (!enclaves.is_null() && unsafe { rmw_check_zero_rmw_string_array(enclaves) } != RET_OK)
     {
         return RET_INVALID_ARGUMENT;
     }
-
+    // Retrieve node information from the graph cache
     let node = unsafe { &*((*node).data as *mut Node) };
     let info = node
         .graph_cache
@@ -220,7 +221,7 @@ pub fn get_node_names(
     if info.is_empty() {
         return RET_OK;
     }
-
+    // Initialize the output structs
     let allocator = &node.context.allocator;
     if unsafe { rcutils_string_array_init(node_names, info.len(), allocator) } != RET_OK
         || unsafe { rcutils_string_array_init(node_namespaces, info.len(), allocator) } != RET_OK
@@ -229,7 +230,7 @@ pub fn get_node_names(
     {
         return RET_ERROR;
     }
-
+    // Populate node names, namespaces, and enclaves
     for (i, ep) in info.iter().enumerate() {
         let node_name = CString::new(ep.node_name.clone()).unwrap();
         let namespace = CString::new(ep.namespace.clone()).unwrap();

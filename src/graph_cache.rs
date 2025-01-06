@@ -9,6 +9,7 @@ use crate::EntityType;
 use crate::GuardCondition;
 use crate::ADMIN_SPACE;
 
+// Represents a graph cache that tracks the state of entities in the system.
 pub struct GraphCache {
     #[allow(dead_code)]
     subscriber: zenoh::pubsub::Subscriber<()>,
@@ -17,6 +18,7 @@ pub struct GraphCache {
 }
 
 impl GraphCache {
+    // Constructor for creating a new GraphCache instance
     pub fn new(context: &Context) -> Result<Self, ()> {
         let key_expr = format!("{ADMIN_SPACE}/{0}/**", context.domain_id);
         let endpoint_map = Arc::new(Mutex::new(BTreeMap::new()));
@@ -47,7 +49,7 @@ impl GraphCache {
             guard_condition: Arc::new(GuardCondition::new(context.wait_set_cv.clone())),
         })
     }
-
+    // Retrieves a list of endpoints matching the given filters.
     pub fn get_endpoint_list(
         &self,
         namespace: &str,
@@ -69,7 +71,7 @@ impl GraphCache {
         }
         result
     }
-
+    // Counts the number of endpoints matching the given filters.
     pub fn count_endpoint(
         &self,
         namespace: &str,

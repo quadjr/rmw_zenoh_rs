@@ -13,13 +13,16 @@ use crate::rmw::rmw_qos_reliability_policy_e_RMW_QOS_POLICY_RELIABILITY_UNKNOWN 
 use crate::rmw::RMW_QOS_POLICY_DEPTH_SYSTEM_DEFAULT as DEPTH_SYSTEM_DEFAULT;
 use crate::DEFAULT_QOS;
 
+// Implement additional functionality for `rmw_qos_profile_t`
 impl rmw_qos_profile_t {
+    // Validates the QoS profile by checking for invalid policies.
     pub fn is_valid(&self) -> bool {
         self.history < HISTORY_UNKNOWN
             && self.reliability < RELIABILITY_UNKNOWN
             && self.durability < DURABILITY_UNKNOWN
             && self.liveliness < POLICY_LIVELINESS_UNKNOWN
     }
+    // Sets the QoS profile to default values for any system default settings.
     pub fn set_default_profile(&mut self) {
         if self.history == HISTORY_SYSTEM_DEFAULT {
             self.history = DEFAULT_QOS.history;
@@ -38,7 +41,7 @@ impl rmw_qos_profile_t {
         }
     }
 }
-
+// Implement the `Display` trait for `rmw_qos_profile_t` to format it as a string
 impl fmt::Display for rmw_qos_profile_t {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fn keyexpr<T: PartialEq + ToString>(current: &T, default: &T) -> String {
@@ -73,7 +76,7 @@ impl fmt::Display for rmw_qos_profile_t {
         Ok(())
     }
 }
-
+// Implement `TryFrom<&str>` for `rmw_qos_profile_t` to parse QoS profiles from strings
 impl TryFrom<&str> for rmw_qos_profile_t {
     type Error = &'static str;
     fn try_from(key_expr: &str) -> Result<Self, Self::Error> {
@@ -116,7 +119,7 @@ impl TryFrom<&str> for rmw_qos_profile_t {
         Ok(qos)
     }
 }
-
+// Implements FromStr for rmw_qos_profile_t, delegating to TryFrom<&str>
 impl FromStr for rmw_qos_profile_t {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {

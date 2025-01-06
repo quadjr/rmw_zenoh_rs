@@ -8,6 +8,7 @@ use crate::ADMIN_SPACE;
 use crate::DEFAULT_QOS;
 use crate::RMW_GID_STORAGE_SIZE;
 
+// EntityType enum: Represents different types of entities in the system
 #[derive(PartialEq, Clone, EnumString, Display)]
 pub enum EntityType {
     #[strum(serialize = "NN")]
@@ -21,12 +22,14 @@ pub enum EntityType {
     #[strum(serialize = "SC")]
     Client,
 }
+// Default implementation for EntityType, defaulting to Node
 impl Default for EntityType {
     fn default() -> EntityType {
         EntityType::Node
     }
 }
 
+// EndpointInfo struct: Represents metadata about an endpoint
 #[derive(Clone)]
 pub struct EndpointInfo {
     pub domain_id: usize,
@@ -44,6 +47,7 @@ pub struct EndpointInfo {
 }
 
 impl EndpointInfo {
+    // Generates a key expression string for the endpoint
     pub fn get_endpoint_keyexpr(&self) -> String {
         [
             self.domain_id.to_string(),
@@ -54,6 +58,7 @@ impl EndpointInfo {
         .join("/")
     }
 
+    // Mangling a name: Replaces '/' with '%'
     pub fn mangle_name(name: &str) -> String {
         if name == "" {
             return "%".to_string();
@@ -61,10 +66,12 @@ impl EndpointInfo {
         name.replace("/", "%")
     }
 
+    // Demangling a name: Replaces '%' with '/'
     fn demangle_name(name: &str) -> String {
         name.replace("%", "/")
     }
 
+    // Computes a Global ID (GID) for the endpoint using SHA-256 hashing
     pub fn get_gid(&self) -> [u8; RMW_GID_STORAGE_SIZE as usize] {
         let mut result = [0; RMW_GID_STORAGE_SIZE as usize];
         let hash = Sha256::digest(self.to_string().as_bytes());
@@ -72,6 +79,7 @@ impl EndpointInfo {
         result
     }
 }
+// Default implementation for EndpointInfo
 impl Default for EndpointInfo {
     fn default() -> Self {
         Self {
@@ -91,7 +99,7 @@ impl Default for EndpointInfo {
     }
 }
 
-// Generate EndpointInfo from keyexpr string
+// Implement Display for EndpointInfo to generate a key expression string
 impl fmt::Display for EndpointInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut key_expr = [
@@ -121,7 +129,7 @@ impl fmt::Display for EndpointInfo {
     }
 }
 
-// Generate keyexpr string from EmtptyInfo
+// Implements TryFrom<&str> for EndpointInfo to parse a key expression string
 impl TryFrom<&str> for EndpointInfo {
     type Error = ();
     fn try_from(key_expr: &str) -> Result<Self, Self::Error> {
@@ -153,7 +161,7 @@ impl TryFrom<&str> for EndpointInfo {
     }
 }
 
-// Generate keyexpr string from EmtptyInfo
+// Implements FromStr for EndpointInfo, delegating to TryFrom<&str>
 impl FromStr for EndpointInfo {
     type Err = ();
     #[inline]
