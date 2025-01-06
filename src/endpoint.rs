@@ -15,7 +15,6 @@ use crate::Node;
 use crate::TypeSupport;
 
 use crate::rmw::rmw_qos_history_policy_e_RMW_QOS_POLICY_HISTORY_KEEP_LAST as HISTORY_KEEP_LAST;
-use crate::rmw::rmw_qos_history_policy_e_RMW_QOS_POLICY_HISTORY_SYSTEM_DEFAULT as HISTORY_SYSTEM_DEFAULT;
 
 pub struct Endpoint<T> {
     pub info: EndpointInfo,
@@ -96,10 +95,7 @@ impl<T> Endpoint<T> {
                 Err(_) => 0,
             };
 
-            if (self.info.qos.history == HISTORY_SYSTEM_DEFAULT
-                || self.info.qos.history == HISTORY_KEEP_LAST)
-                && fifo.len() >= self.info.qos.depth
-            {
+            if (self.info.qos.history == HISTORY_KEEP_LAST) && fifo.len() >= self.info.qos.depth {
                 fifo.pop_front();
             }
             fifo.push_back((timestamp, data));
