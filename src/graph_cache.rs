@@ -69,4 +69,26 @@ impl GraphCache {
         }
         result
     }
+
+    pub fn count_endpoint(
+        &self,
+        namespace: &str,
+        node_name: &str,
+        endpoint_name: &str,
+        entity_types: &[EntityType],
+    ) -> usize {
+        let mut result = 0;
+        if let Ok(endpoint_map) = self.endpoint_map.lock() {
+            for ep in endpoint_map.values() {
+                if ((namespace == "" && node_name == "") || ep.namespace == namespace)
+                    && (node_name == "" || ep.node_name == node_name)
+                    && (endpoint_name == "" || ep.endpoint_name == endpoint_name)
+                    && entity_types.contains(&ep.entity_type)
+                {
+                    result += 1;
+                }
+            }
+        }
+        result
+    }
 }
