@@ -10,6 +10,7 @@ use crate::rmw::rmw_qos_liveliness_policy_e_RMW_QOS_POLICY_LIVELINESS_UNKNOWN as
 use crate::rmw::rmw_qos_profile_t;
 use crate::rmw::rmw_qos_reliability_policy_e_RMW_QOS_POLICY_RELIABILITY_SYSTEM_DEFAULT as RELIABILITY_SYSTEM_DEFAULT;
 use crate::rmw::rmw_qos_reliability_policy_e_RMW_QOS_POLICY_RELIABILITY_UNKNOWN as RELIABILITY_UNKNOWN;
+use crate::rmw::RMW_QOS_POLICY_DEPTH_SYSTEM_DEFAULT as DEPTH_SYSTEM_DEFAULT;
 use crate::DEFAULT_QOS;
 
 impl rmw_qos_profile_t {
@@ -22,6 +23,9 @@ impl rmw_qos_profile_t {
     pub fn set_default_profile(&mut self) {
         if self.history == HISTORY_SYSTEM_DEFAULT {
             self.history = DEFAULT_QOS.history;
+        }
+        if self.depth == DEPTH_SYSTEM_DEFAULT as usize {
+            self.depth = DEFAULT_QOS.depth;
         }
         if self.reliability == RELIABILITY_SYSTEM_DEFAULT {
             self.reliability = DEFAULT_QOS.reliability;

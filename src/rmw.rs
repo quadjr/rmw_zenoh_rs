@@ -491,13 +491,13 @@ pub extern "C" fn rmw_publisher_count_matched_subscriptions(
     validate_implementation_identifier!(publisher);
 
     let pub_impl = unsafe { &mut *((*publisher).data as *mut Publisher) };
-    let info = pub_impl.endpoint.graph_cache.get_endpoint_list(
+    let count = pub_impl.endpoint.graph_cache.count_endpoint(
         "",
         "",
         &pub_impl.endpoint.info.endpoint_name,
         &[EntityType::Subscriber],
     );
-    unsafe { *subscription_count = info.len() };
+    unsafe { *subscription_count = count };
     RET_OK
 }
 
@@ -699,13 +699,13 @@ pub extern "C" fn rmw_subscription_count_matched_publishers(
     validate_implementation_identifier!(subscription);
 
     let sub_impl = unsafe { &mut *((*subscription).data as *mut Subscriber) };
-    let info = sub_impl.endpoint.graph_cache.get_endpoint_list(
+    let count = sub_impl.endpoint.graph_cache.count_endpoint(
         "",
         "",
         &sub_impl.endpoint.info.endpoint_name,
         &[EntityType::Publisher],
     );
-    unsafe { *publisher_count = info.len() };
+    unsafe { *publisher_count = count };
     RET_OK
 }
 
@@ -1084,10 +1084,10 @@ pub extern "C" fn rmw_service_server_is_available(
     let node = unsafe { &*((*node).data as *mut Node) };
     let client = unsafe { &*((*client).data as *mut Client) };
     let endpoint_name = &(client.endpoint.info.endpoint_name);
-    let info = node
+    let count = node
         .graph_cache
-        .get_endpoint_list("", "", endpoint_name, &[EntityType::Service]);
-    unsafe { *is_available = info.len() > 0 };
+        .count_endpoint("", "", endpoint_name, &[EntityType::Service]);
+    unsafe { *is_available = count > 0 };
     RET_OK
 }
 
@@ -1625,11 +1625,11 @@ pub extern "C" fn rmw_count_publishers(
     };
 
     let node = unsafe { &*((*node).data as *mut Node) };
-    let info = node
-        .graph_cache
-        .get_endpoint_list("", "", topic_name, &[EntityType::Publisher]);
+    let endpoint_count =
+        node.graph_cache
+            .count_endpoint("", "", topic_name, &[EntityType::Publisher]);
     unsafe {
-        *count = info.len();
+        *count = endpoint_count;
     }
     RET_OK
 }
@@ -1648,11 +1648,11 @@ pub extern "C" fn rmw_count_subscribers(
     };
 
     let node = unsafe { &*((*node).data as *mut Node) };
-    let info = node
-        .graph_cache
-        .get_endpoint_list("", "", topic_name, &[EntityType::Subscriber]);
+    let endpoint_count =
+        node.graph_cache
+            .count_endpoint("", "", topic_name, &[EntityType::Subscriber]);
     unsafe {
-        *count = info.len();
+        *count = endpoint_count;
     }
     RET_OK
 }
