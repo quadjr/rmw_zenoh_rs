@@ -1620,6 +1620,13 @@ pub extern "C" fn rmw_count_publishers(
     check_not_null_all!(RET_INVALID_ARGUMENT, node, (*node).data, topic_name, count);
     validate_implementation_identifier!(node);
 
+    let mut topic_valid: i32 = 0;
+    if unsafe { rmw_validate_full_topic_name(topic_name, &mut topic_valid, null_mut()) } != RET_OK
+        || topic_valid != TOPIC_VALID
+    {
+        return RET_INVALID_ARGUMENT;
+    }
+
     let Ok(topic_name) = str_from_ptr(topic_name) else {
         return RET_INVALID_ARGUMENT;
     };
@@ -1642,6 +1649,13 @@ pub extern "C" fn rmw_count_subscribers(
 ) -> rmw_ret_t {
     check_not_null_all!(RET_INVALID_ARGUMENT, node, (*node).data, topic_name, count);
     validate_implementation_identifier!(node);
+
+    let mut topic_valid: i32 = 0;
+    if unsafe { rmw_validate_full_topic_name(topic_name, &mut topic_valid, null_mut()) } != RET_OK
+        || topic_valid != TOPIC_VALID
+    {
+        return RET_INVALID_ARGUMENT;
+    }
 
     let Ok(topic_name) = str_from_ptr(topic_name) else {
         return RET_INVALID_ARGUMENT;
