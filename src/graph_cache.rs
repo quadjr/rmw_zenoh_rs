@@ -14,7 +14,7 @@ pub struct GraphCache {
     #[allow(dead_code)]
     subscriber: zenoh::pubsub::Subscriber<()>,
     endpoint_map: Arc<std::sync::Mutex<BTreeMap<String, EndpointInfo>>>,
-    pub guard_condition: Arc<GuardCondition>,
+    pub guard_condition: Box<GuardCondition>,
 }
 
 impl GraphCache {
@@ -46,7 +46,7 @@ impl GraphCache {
                 .wait()
                 .map_err(|_| ())?,
             endpoint_map,
-            guard_condition: Arc::new(GuardCondition::new(context.wait_set_cv.clone())),
+            guard_condition: Box::new(GuardCondition::new(context.wait_set_cv.clone())),
         })
     }
     // Retrieves a list of endpoints matching the given filters.

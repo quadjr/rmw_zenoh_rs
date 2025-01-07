@@ -3,6 +3,7 @@
 #![allow(improper_ctypes)]
 #![allow(non_snake_case)]
 
+use std::ptr::addr_of;
 use std::ptr::{null, null_mut};
 use std::time::Duration;
 
@@ -210,13 +211,11 @@ pub extern "C" fn rmw_create_guard_condition(
     let ctx_impl = unsafe { &mut *((*context).impl_ as *mut Context) };
     let guard_condition = GuardCondition::new(ctx_impl.wait_set_cv.clone());
 
-    let a = Box::into_raw(Box::new(guard_condition));
-    let b = Box::into_raw(Box::new(rmw_guard_condition_t {
+    Box::into_raw(Box::new(rmw_guard_condition_t {
         implementation_identifier: rmw_get_implementation_identifier(),
-        data: a as *mut ::std::os::raw::c_void,
+        data: Box::into_raw(Box::new(guard_condition)) as *mut ::std::os::raw::c_void,
         context: context,
-    }));
-    b
+    }))
 }
 
 #[no_mangle]
@@ -267,11 +266,11 @@ pub extern "C" fn rmw_create_node(
         return null_mut();
     };
 
-    node.graph_guard_condition = Some(rmw_guard_condition_t {
+    node.graph_guard_condition = Some(Box::new(rmw_guard_condition_t {
         implementation_identifier: rmw_get_implementation_identifier(),
-        data: &(*node.graph_cache.guard_condition) as *const _ as *mut ::std::os::raw::c_void,
+        data: addr_of!(*node.graph_cache.guard_condition) as *mut ::std::os::raw::c_void,
         context: context,
-    });
+    }));
 
     Box::into_raw(Box::new(rmw_node_t {
         implementation_identifier: rmw_get_implementation_identifier(),
@@ -1261,8 +1260,8 @@ pub extern "C" fn rmw_node_get_graph_guard_condition(
     validate_implementation_identifier!(null(), node);
 
     let node_impl = unsafe { &mut *((*node).data as *mut Node) };
-    match node_impl.graph_guard_condition {
-        Some(guard_condition) => &guard_condition,
+    match &node_impl.graph_guard_condition {
+        Some(guard_condition) => addr_of!(**guard_condition),
         None => null(),
     }
 }
@@ -1289,7 +1288,7 @@ pub extern "C" fn rmw_create_wait_set(
 ) -> *mut rmw_wait_set_t {
     check_not_null_all!(null_mut(), context, (*context).impl_);
     validate_implementation_identifier!(null_mut(), context);
-    Box::into_raw(Box::new(rmw_wait_set_s {
+    Box::into_raw(Box::new(rmw_wait_set_t {
         implementation_identifier: rmw_get_implementation_identifier(),
         guard_conditions: null_mut(),
         data: rmw_create_guard_condition(context) as *mut ::std::os::raw::c_void,

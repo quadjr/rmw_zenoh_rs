@@ -13,7 +13,7 @@ pub struct Node<'a> {
     pub context: &'a Context,
     pub info: EndpointInfo,
     pub graph_cache: Arc<GraphCache>,
-    pub graph_guard_condition: Option<rmw_guard_condition_t>,
+    pub graph_guard_condition: Option<Box<rmw_guard_condition_t>>,
     next_entity_id: AtomicUsize,
     #[allow(dead_code)]
     liveliness_token: zenoh::liveliness::LivelinessToken,
