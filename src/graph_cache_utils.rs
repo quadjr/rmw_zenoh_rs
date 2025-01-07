@@ -128,12 +128,12 @@ pub fn get_names_and_types(
     let node_name = str_from_ptr(node_name).unwrap_or("");
     let namespace = str_from_ptr(namespace).unwrap_or("");
     let graph_cache = unsafe { &(*((*node).data as *mut Node)).graph_cache };
-    let node_info = graph_cache.get_endpoint_list(node_name, namespace, "", &[EntityType::Node]);
+    let node_info = graph_cache.get_endpoint_list(namespace, node_name, "", &[EntityType::Node]);
     if node_info.is_empty() {
         return RET_NODE_NAME_NON_EXISTENT;
     }
     // Retrieve endpoint information from the graph cache
-    let info = graph_cache.get_endpoint_list(node_name, namespace, "", endpoint_types);
+    let info = graph_cache.get_endpoint_list(namespace, node_name, "", endpoint_types);
     if info.is_empty() {
         return RET_OK;
     }
