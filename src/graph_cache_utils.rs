@@ -148,7 +148,7 @@ pub fn get_names_and_types(
     if unsafe { rmw_names_and_types_init(&mut *names_and_types, map.len(), allocator) } != RET_OK {
         return RET_ERROR;
     }
-    /// Sets topic names and types into rmw_names_and_types_t.
+    // Sets topic names and types into rmw_names_and_types_t.
     if map.iter().enumerate().all(|(name_index, item)| unsafe {
         if let Ok(topic_name) = CString::new(item.0.clone()) {
             std::ptr::write(
