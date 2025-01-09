@@ -58,6 +58,31 @@ impl EndpointInfo {
         .join("/")
     }
 
+    // Generates a key expression string for the publisher
+    pub fn get_publisher_keyexpr(&self) -> String {
+        [
+            self.domain_id.to_string(),
+            Self::mangle_name(&self.endpoint_name),
+            Self::mangle_name(&self.endpoint_type.to_string()),
+            Self::mangle_name(&self.endpoint_typehash),
+            self.z_id.to_string(),
+            self.node_id.to_string(),
+        ]
+        .join("/")
+    }
+
+    // Generates a key expression string for the subscriber
+    pub fn get_subscriber_keyexpr(&self) -> String {
+        [
+            self.domain_id.to_string(),
+            Self::mangle_name(&self.endpoint_name),
+            Self::mangle_name(&self.endpoint_type.to_string()),
+            Self::mangle_name(&self.endpoint_typehash),
+            "**".to_string(),
+        ]
+        .join("/")
+    }
+
     // Mangling a name: Replaces '/' with '%'
     pub fn mangle_name(name: &str) -> String {
         if name == "" {

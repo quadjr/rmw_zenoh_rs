@@ -637,7 +637,11 @@ pub extern "C" fn rmw_create_subscription(
         return null_mut();
     };
 
-    let Ok(subscriber) = Subscriber::new(node_impl, topic_name.ref_str, type_support, *qos) else {
+    let Ok(subscriber) =
+        Subscriber::new(node_impl, topic_name.ref_str, type_support, *qos, unsafe {
+            (*subscription_options).ignore_local_publications
+        })
+    else {
         return null_mut();
     };
 
