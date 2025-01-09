@@ -39,6 +39,7 @@ impl Subscriber {
         endpoint_name: &str,
         type_support: TypeSupport,
         mut qos: rmw_qos_profile_t,
+        ignore_local_publications: bool,
     ) -> Result<Self, ()> {
         // Ensure default QoS settings are applied
         qos.set_default_profile();
@@ -51,7 +52,8 @@ impl Subscriber {
             qos,
         )?);
         // Generate the key expression for the endpoint
-        let key_expr = endpoint.info.get_endpoint_keyexpr();
+        let key_expr = endpoint.info.get_subscriber_keyexpr();
+        let local_publisher_key_expr = endpoint.info.get_publisher_keyexpr();
         let endpoint_clone = endpoint.clone();
         // Check if durability is set to Transient Local
         if qos.durability == DURABILITY_TRANSIENT_LOCAL {
@@ -63,7 +65,11 @@ impl Subscriber {
                         .declare_subscriber(key_expr)
                         .history(HistoryConfig::default().detect_late_publishers())
                         .callback(move |sample| {
-                            endpoint_clone.push_recv_data(sample);
+                            if !ignore_local_publications
+                                || sample.key_expr().as_str() != local_publisher_key_expr
+                            {
+                                endpoint_clone.push_recv_data(sample);
+                            }
                         })
                         .wait()
                         .map_err(|_| ())?,
@@ -78,7 +84,11 @@ impl Subscriber {
                         .session
                         .declare_subscriber(key_expr)
                         .callback(move |sample| {
-                            endpoint_clone.push_recv_data(sample);
+                            if !ignore_local_publications
+                                || sample.key_expr().as_str() != local_publisher_key_expr
+                            {
+                                endpoint_clone.push_recv_data(sample);
+                            }
                         })
                         .wait()
                         .map_err(|_| ())?,

@@ -45,7 +45,7 @@ impl<'a> Publisher<'a> {
             qos,
         )?);
         // Generate the key expression for the endpoint
-        let key_expr = endpoint.info.get_endpoint_keyexpr();
+        let key_expr = endpoint.info.get_publisher_keyexpr();
         // Check if durability is set to Transient Local
         if qos.durability == DURABILITY_TRANSIENT_LOCAL {
             // Create an advanced publisher with caching
