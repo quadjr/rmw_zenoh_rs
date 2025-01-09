@@ -431,8 +431,7 @@ pub extern "C" fn rmw_publish_serialized_message(
         RET_INVALID_ARGUMENT,
         publisher,
         (*publisher).data,
-        serialized_message,
-        (*serialized_message).buffer
+        serialized_message
     );
     validate_implementation_identifier!(publisher);
     let serialized_message = unsafe { &*serialized_message };
@@ -1216,7 +1215,13 @@ pub extern "C" fn rmw_send_response(
     request_header: *mut rmw_request_id_t,
     ros_response: *mut ::std::os::raw::c_void,
 ) -> rmw_ret_t {
-    check_not_null_all!(RET_INVALID_ARGUMENT, service, (*service).data, ros_response);
+    check_not_null_all!(
+        RET_INVALID_ARGUMENT,
+        service,
+        (*service).data,
+        request_header,
+        ros_response
+    );
     validate_implementation_identifier!(service);
 
     let service_impl = unsafe { &mut *((*service).data as *mut Service) };
@@ -1468,12 +1473,16 @@ pub extern "C" fn rmw_event_set_callback(
 
 #[no_mangle]
 pub extern "C" fn rmw_qos_profile_check_compatible(
-    _publisher_profile: rmw_qos_profile_t,
-    _subscription_profile: rmw_qos_profile_t,
+    publisher_profile: rmw_qos_profile_t,
+    subscription_profile: rmw_qos_profile_t,
     compatibility: *mut rmw_qos_compatibility_type_t,
     reason: *mut ::std::os::raw::c_char,
     reason_size: usize,
 ) -> rmw_ret_t {
+    check_not_null_all!(RET_INVALID_ARGUMENT, compatibility, reason);
+    if !publisher_profile.is_valid() || !subscription_profile.is_valid() {
+        return RET_INVALID_ARGUMENT;
+    }
     unsafe {
         if reason_size != 0 {
             *reason = b'\0' as std::os::raw::c_char;
@@ -1870,7 +1879,7 @@ pub extern "C" fn rmw_compare_gids_equal(
     gid2: *const rmw_gid_t,
     result: *mut bool,
 ) -> rmw_ret_t {
-    check_not_null_all!(RET_INVALID_ARGUMENT, gid1, gid2);
+    check_not_null_all!(RET_INVALID_ARGUMENT, gid1, gid2, result);
     validate_implementation_identifier!(gid1);
     validate_implementation_identifier!(gid2);
 

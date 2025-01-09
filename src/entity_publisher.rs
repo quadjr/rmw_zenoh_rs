@@ -85,6 +85,9 @@ impl<'a> Publisher<'a> {
     }
     // Publishes a serialized message
     pub fn publish_serialized_message(&self, msg: &rmw_serialized_message_t) -> Result<(), ()> {
+        if msg.buffer.is_null() || msg.buffer_length == 0 {
+            return Err(());
+        }
         // Create an attachment with metadata
         let attachment: ZBytes = Attachment::new(
             self.endpoint
