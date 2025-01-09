@@ -46,7 +46,11 @@ const void * rs_get_request_type_support_callbacks(
 ){
     const service_type_support_callbacks_t *service_members =
         rs_get_service_type_support_callbacks(type_support);
-    return service_members->request_members_->data;
+    if (service_members){
+        return service_members->request_members_->data;
+    }else{
+        return NULL;
+    }
 }
 
 // Retrieve response type support callbacks from service type support
@@ -55,7 +59,11 @@ const void * rs_get_response_type_support_callbacks(
 ){
     const service_type_support_callbacks_t *service_members =
         rs_get_service_type_support_callbacks(type_support);
-    return service_members->response_members_->data;
+    if (service_members){
+        return service_members->response_members_->data;
+    }else{
+        return NULL;
+    }
 }
 
 // Retrieve the message name from type support callbacks

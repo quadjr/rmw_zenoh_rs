@@ -27,30 +27,42 @@ impl TypeSupport {
         type_support: *const rosidl_message_type_support_t,
     ) -> Result<Self, ()> {
         let type_support = unsafe { rs_get_message_type_support_callbacks(type_support) };
-        Ok(TypeSupport {
-            type_name: Self::get_type_name(type_support, "")?,
-            type_support,
-        })
+        if !type_support.is_null() {
+            Ok(TypeSupport {
+                type_name: Self::get_type_name(type_support, "")?,
+                type_support,
+            })
+        } else {
+            Err(())
+        }
     }
     // Creates a new `TypeSupport` for a service request type.
     pub fn new_request_type_support(
         type_support: *const rosidl_service_type_support_t,
     ) -> Result<Self, ()> {
         let type_support = unsafe { rs_get_request_type_support_callbacks(type_support) };
-        Ok(TypeSupport {
-            type_name: Self::get_type_name(type_support, "_Request")?,
-            type_support,
-        })
+        if !type_support.is_null() {
+            Ok(TypeSupport {
+                type_name: Self::get_type_name(type_support, "_Request")?,
+                type_support,
+            })
+        } else {
+            Err(())
+        }
     }
     // Creates a new `TypeSupport` for a service response type.
     pub fn new_response_type_support(
         type_support: *const rosidl_service_type_support_t,
     ) -> Result<Self, ()> {
         let type_support = unsafe { rs_get_response_type_support_callbacks(type_support) };
-        Ok(TypeSupport {
-            type_name: Self::get_type_name(type_support, "_Response")?,
-            type_support,
-        })
+        if !type_support.is_null() {
+            Ok(TypeSupport {
+                type_name: Self::get_type_name(type_support, "_Response")?,
+                type_support,
+            })
+        } else {
+            Err(())
+        }
     }
     // Retrieves the fully qualified type name.
     fn get_type_name(
