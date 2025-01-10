@@ -859,14 +859,53 @@ pub extern "C" fn rmw_take(
 
 #[no_mangle]
 pub extern "C" fn rmw_take_sequence(
-    _subscription: *const rmw_subscription_t,
-    _count: usize,
-    _message_sequence: *mut rmw_message_sequence_t,
-    _message_info_sequence: *mut rmw_message_info_sequence_t,
-    _taken: *mut usize,
+    subscription: *const rmw_subscription_t,
+    count: usize,
+    message_sequence: *mut rmw_message_sequence_t,
+    message_info_sequence: *mut rmw_message_info_sequence_t,
+    taken: *mut usize,
     _allocation: *mut rmw_subscription_allocation_t,
 ) -> rmw_ret_t {
-    RET_UNSUPPORTED // Used in rcl
+    check_not_null_all!(
+        RET_INVALID_ARGUMENT,
+        subscription,
+        (*subscription).data,
+        message_sequence,
+        (*message_sequence).data,
+        message_info_sequence,
+        (*message_info_sequence).data,
+        taken
+    );
+    validate_implementation_identifier!(subscription);
+
+    let taken = unsafe { &mut *taken };
+    let message_sequence = unsafe { &mut *message_sequence };
+    let message_info_sequence = unsafe { &mut *message_info_sequence };
+    if count == 0 || count > message_sequence.capacity || count > message_info_sequence.capacity {
+        return RET_INVALID_ARGUMENT;
+    }
+
+    let sub_impl = unsafe { &mut *((*subscription).data as *mut Subscriber) };
+    let mut taken_count = 0;
+    for _ in 0..count {
+        match sub_impl.take_message(unsafe { *message_sequence.data.add(taken_count) }, unsafe {
+            message_info_sequence.data.add(taken_count)
+        }) {
+            Ok(res_taken) => {
+                if res_taken {
+                    taken_count += 1;
+                } else {
+                    break;
+                }
+            }
+            Err(_) => break,
+        }
+    }
+
+    *taken = taken_count;
+    message_sequence.size = taken_count;
+    message_info_sequence.size = taken_count;
+    RET_OK
 }
 
 #[no_mangle]
