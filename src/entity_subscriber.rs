@@ -126,7 +126,7 @@ impl Subscriber {
         // Read the payload into the serialized message buffer
         read_payload(data.1.payload(), serialized_message)?;
         // Fill in the message metadata
-        if message_info.is_null() {
+        if !message_info.is_null() {
             // Parse the attachment
             let attachment: Attachment = data.1.attachment().ok_or(())?.try_into()?;
             let info = unsafe { &mut *message_info };
