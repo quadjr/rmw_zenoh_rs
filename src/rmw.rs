@@ -1400,10 +1400,6 @@ pub extern "C" fn rmw_wait(
                 items.push(&mut *((*(*item as *const rmw_event_t)).data as *mut Event));
             }
         }
-        // If no items are collected, return a timeout immediately.
-        if items.len() == 0 {
-            return RET_TIMEOUT;
-        }
 
         // Prepare the condition variable associated with the guard condition in the wait set.
         let mut data_ready = false;
