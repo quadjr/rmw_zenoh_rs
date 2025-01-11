@@ -3,7 +3,8 @@
 An experimental implementation of the ROS 2 RMW (ROS Middleware) layer based on Zenoh.
 
 This project was created as part of a learning exercise for Rust. The implementation is heavily inspired by [rmw_zenoh](https://github.com/ros2/rmw_zenoh).  
-Currently, it only works with ROS 2 Humble and has not been thoroughly tested.
+Currently, it only works with ROS 2 Humble.
+Excluding the unimplemented Events and Content Filtering, this implementation has passed most of RMW tests.
 
 ---
 
@@ -91,6 +92,7 @@ To use a custom configuration file, set the `ZENOH_SESSION_CONFIG_URI` environme
 ```bash
 export ZENOH_SESSION_CONFIG_URI=$HOME/MY_ZENOH_SESSION_CONFIG.json5
 ```
+scouting.multicast.interface is overwritten with the loopback interface when the environment variable ROS_LOCALHOST_ONLY is set to 1.
 
 ---
 
@@ -102,6 +104,5 @@ Logging functionality has not been implemented yet.
 
 ## Known Issues
 
-- **Error handling**: Error handling needs improvement.
-- **Events**: Events are not implemented yet.
-- **Content filtering**: Content filtering is not implemented yet.
+- **Events**: Events has not been implemented yet.
+- **Content filtering**: Content filtering has not been implemented yet.
