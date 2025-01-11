@@ -121,9 +121,11 @@ impl Service {
         let payload = data.1.payload().ok_or(())?;
         read_payload(payload, &mut msg)?;
         type_support.deserialize(&*msg, ros_request)?;
+        // Set the received timestamp
+        let request_header = unsafe { &mut *request_header };
+        request_header.received_timestamp = data.0;
         // Parse the attachment
         let attachment: Attachment = data.1.attachment().ok_or(())?.try_into()?;
-        let request_header = unsafe { &mut *request_header };
         request_header.source_timestamp = attachment.source_timestamp;
         request_header.request_id.sequence_number = attachment.sequence_number;
         request_header.request_id.writer_guid = attachment.source_gid;
