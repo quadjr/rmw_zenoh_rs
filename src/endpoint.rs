@@ -62,7 +62,7 @@ impl<T> Endpoint<T> {
         let endpoint = Endpoint {
             info,
             graph_cache: node.graph_cache.clone(),
-            sequence_number: AtomicI64::new(0),
+            sequence_number: AtomicI64::new(1),
             events: Mutex::new(HashMap::new()),
             message_buffer: Mutex::new(
                 rmw_serialized_message_t::new(0, node.context.allocator.clone()).map_err(|_| ())?,
