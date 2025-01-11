@@ -24,28 +24,44 @@ find_package(rmw REQUIRED)
 
 set(GENERATED_LIB_FILE ${CMAKE_CURRENT_BINARY_DIR}/release/librmw_zenoh_rs.so)
 
+file(GLOB RUST_SOURCES
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/*.rs"
+)
+
+add_library(rmw_zenoh_rs SHARED cpp/dummy_for_build.cpp)
+
+set_source_files_properties(
+  cpp/dummy_for_build.cpp
+  PROPERTIES
+    OBJECT_DEPENDS "${RUST_SOURCES};${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml"
+)
+
 add_custom_command(
-  OUTPUT ${GENERATED_LIB_FILE} ${GENERATED_LIB_FILE}_dummy
+  TARGET rmw_zenoh_rs
+  POST_BUILD
   COMMAND cargo build --release --manifest-path ${CMAKE_CURRENT_SOURCE_DIR}/Cargo.toml --target-dir ${CMAKE_CURRENT_BINARY_DIR}
-  WORKING_DIRECTORY .
-  BYPRODUCTS ${GENERATED_LIB_FILE}
   COMMENT "Building Rust library"
 )
 
-add_custom_target(rmw_zenoh_rs ALL DEPENDS ${GENERATED_LIB_FILE})
+set_target_properties(rmw_zenoh_rs PROPERTIES
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/release"
+  OUTPUT_NAME "rmw_zenoh_rs"
+)
 
 configure_rmw_library(rmw_zenoh_rs)
 
-# ament_export_targets(export_rmw_zenoh_rs)
+ament_export_targets(export_rmw_zenoh_rs)
 
 register_rmw_implementation(
   "c:rosidl_typesupport_c:rosidl_typesupport_fastrtps_c:rosidl_typesupport_introspection_c"
   "cpp:rosidl_typesupport_cpp:rosidl_typesupport_fastrtps_cpp:rosidl_typesupport_introspection_cpp")
 
 install(
-FILES ${GENERATED_LIB_FILE}
-# EXPORT export_rmw_zenoh_rs
-DESTINATION lib
+  TARGETS rmw_zenoh_rs
+  EXPORT export_rmw_zenoh_rs
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
 )
 
 install(

@@ -266,9 +266,15 @@ pub extern "C" fn rmw_create_node(
         return null_mut();
     };
 
+    let addr_of_guard_condition;
+    if let Ok(guard_condition) = node.graph_cache.guard_condition.lock() {
+        addr_of_guard_condition = addr_of!(*guard_condition);
+    } else {
+        return null_mut();
+    };
     node.graph_guard_condition = Some(Box::new(rmw_guard_condition_t {
         implementation_identifier: rmw_get_implementation_identifier(),
-        data: addr_of!(*node.graph_cache.guard_condition) as *mut ::std::os::raw::c_void,
+        data: addr_of_guard_condition as *mut ::std::os::raw::c_void,
         context: context,
     }));
 
@@ -1399,10 +1405,6 @@ pub extern "C" fn rmw_wait(
                 items_ptr.push(item);
                 items.push(&mut *((*(*item as *const rmw_event_t)).data as *mut Event));
             }
-        }
-        // If no items are collected, return a timeout immediately.
-        if items.len() == 0 {
-            return RET_TIMEOUT;
         }
 
         // Prepare the condition variable associated with the guard condition in the wait set.
