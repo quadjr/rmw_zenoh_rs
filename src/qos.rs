@@ -111,10 +111,10 @@ impl TryFrom<&str> for rmw_qos_profile_t {
         parse_value_if_exists(&mut qos.depth, history_parts[1]);
         parse_value_if_exists(&mut qos.deadline.sec, deadline_parts[0]);
         parse_value_if_exists(&mut qos.deadline.nsec, deadline_parts[1]);
-        parse_value_if_exists(&mut qos.lifespan.nsec, lifespan_parts[0]);
+        parse_value_if_exists(&mut qos.lifespan.sec, lifespan_parts[0]);
         parse_value_if_exists(&mut qos.lifespan.nsec, lifespan_parts[1]);
         parse_value_if_exists(&mut qos.liveliness, liveliness_parts[0]);
-        parse_value_if_exists(&mut qos.liveliness_lease_duration.nsec, liveliness_parts[1]);
+        parse_value_if_exists(&mut qos.liveliness_lease_duration.sec, liveliness_parts[1]);
         parse_value_if_exists(&mut qos.liveliness_lease_duration.nsec, liveliness_parts[2]);
         Ok(qos)
     }
