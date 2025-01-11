@@ -266,9 +266,15 @@ pub extern "C" fn rmw_create_node(
         return null_mut();
     };
 
+    let addr_of_guard_condition;
+    if let Ok(guard_condition) = node.graph_cache.guard_condition.lock() {
+        addr_of_guard_condition = addr_of!(*guard_condition);
+    } else {
+        return null_mut();
+    };
     node.graph_guard_condition = Some(Box::new(rmw_guard_condition_t {
         implementation_identifier: rmw_get_implementation_identifier(),
-        data: addr_of!(*node.graph_cache.guard_condition) as *mut ::std::os::raw::c_void,
+        data: addr_of_guard_condition as *mut ::std::os::raw::c_void,
         context: context,
     }));
 

@@ -14,7 +14,7 @@ pub struct GraphCache {
     #[allow(dead_code)]
     subscriber: zenoh::pubsub::Subscriber<()>,
     endpoint_map: Arc<std::sync::Mutex<BTreeMap<String, EndpointInfo>>>,
-    pub guard_condition: Box<GuardCondition>,
+    pub guard_condition: Arc<Mutex<GuardCondition>>,
 }
 
 impl GraphCache {
@@ -23,6 +23,9 @@ impl GraphCache {
         let key_expr = format!("{ADMIN_SPACE}/{0}/**", context.domain_id);
         let endpoint_map = Arc::new(Mutex::new(BTreeMap::new()));
         let endpoint_map_clone = endpoint_map.clone();
+        let guard_condition =
+            Arc::new(Mutex::new(GuardCondition::new(context.wait_set_cv.clone())));
+        let guard_condition_clone = guard_condition.clone();
         Ok(GraphCache {
             subscriber: context
                 .session
@@ -34,19 +37,25 @@ impl GraphCache {
                         if let Ok(info) = EndpointInfo::try_from(sample.key_expr().as_str()) {
                             if let Ok(mut endpoint_map) = endpoint_map_clone.lock() {
                                 endpoint_map.insert(sample.key_expr().to_string(), info);
+                                if let Ok(mut guard) = guard_condition_clone.lock() {
+                                    guard.trigger();
+                                }
                             }
                         }
                     }
                     SampleKind::Delete => {
                         if let Ok(mut endpoint_map) = endpoint_map_clone.lock() {
                             endpoint_map.remove(sample.key_expr().as_str());
+                            if let Ok(mut guard) = guard_condition_clone.lock() {
+                                guard.trigger();
+                            }
                         }
                     }
                 })
                 .wait()
                 .map_err(|_| ())?,
             endpoint_map,
-            guard_condition: Box::new(GuardCondition::new(context.wait_set_cv.clone())),
+            guard_condition,
         })
     }
     // Retrieves a list of endpoints matching the given filters.
