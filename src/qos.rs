@@ -36,8 +36,17 @@ impl rmw_qos_profile_t {
         if self.durability == DURABILITY_SYSTEM_DEFAULT {
             self.durability = DEFAULT_QOS.durability;
         }
+        if self.deadline.sec == 0 && self.deadline.nsec == 0 {
+            self.deadline = DEFAULT_QOS.deadline;
+        }
+        if self.lifespan.sec == 0 && self.lifespan.nsec == 0 {
+            self.lifespan = DEFAULT_QOS.lifespan;
+        }
         if self.liveliness == LIVELINESS_SYSTEM_DEFAULT {
             self.liveliness = DEFAULT_QOS.liveliness;
+        }
+        if self.liveliness_lease_duration.sec == 0 && self.liveliness_lease_duration.nsec == 0 {
+            self.liveliness_lease_duration = DEFAULT_QOS.liveliness_lease_duration;
         }
     }
 }
