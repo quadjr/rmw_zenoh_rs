@@ -1,5 +1,6 @@
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 use zenoh::bytes::ZBytes;
 use zenoh::query::Reply;
@@ -46,6 +47,7 @@ impl<'a> Client<'a> {
             .context
             .session
             .declare_querier(key_expr)
+            .timeout(Duration::MAX)
             .wait()
             .map_err(|_| ())?;
         Ok(Client { client, endpoint })
